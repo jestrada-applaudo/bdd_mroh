@@ -1,0 +1,8 @@
+# Core BDD Testing Framework Requirements
+behave==1.2.6
+requests==2.31.0
+python-dotenv==1.0.0
+
+# For handling API responses
+PyYAML==6.0.1
+jsonschema==4.21.1
