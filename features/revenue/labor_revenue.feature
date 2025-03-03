@@ -35,10 +35,10 @@ Feature: Labor Revenue Management
 
   @revenue_test @labor @search
   Scenario: Search for labor revenues
-    Given I have created a labor revenue with customer code "SEARCH-TEST"
-    When I search for labor revenues with text "SEARCH-TEST"
+    Given I have created a labor revenue with customer code "TEST-CUSTOMER"
+    When I search for labor revenues with text "TEST-CUSTOMER"
     Then the search results should contain exactly 1 entry
-    And the entry should have customer code "SEARCH-TEST"
+    And the entry should have customer code "TEST-CUSTOMER"
 
   @revenue_test @labor @validation @negative
   Scenario: Validate event association dates

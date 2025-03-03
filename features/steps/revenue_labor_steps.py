@@ -181,17 +181,17 @@ def step_impl(context, search_text):
 
 @then('the search results should contain exactly {count:d} entry')
 def step_impl(context, count):
-    assert "content" in context.response, f"No content in response: {context.response}"
-    actual_count = len(context.response["content"])
+    assert "items" in context.response, f"No content in response: {context.response}"
+    actual_count = len(context.response["items"])
     assert actual_count == count, f"Expected exactly {count} entries, got {actual_count}"
     context.logger.info(f"Found exactly {count} entries as expected")
 
 @then('the entry should have customer code "{customer_code}"')
 def step_impl(context, customer_code):
-    assert "content" in context.response, "No content in response"
-    assert len(context.response["content"]) > 0, "No entries in response"
+    assert "items" in context.response, "No content in response"
+    assert len(context.response["items"]) > 0, "No entries in response"
     
-    entry = context.response["content"][0]
+    entry = context.response["items"][0]
     assert entry["customerCode"] == customer_code, f"Expected customer code {customer_code}, got {entry['customerCode']}"
     context.logger.info(f"Verified customer code is {customer_code}")
 
