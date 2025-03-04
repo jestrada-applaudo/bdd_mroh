@@ -53,4 +53,4 @@ Feature: Labor Revenue Management
     Given I have created multiple labor revenue entries
     When I export labor revenues to Excel format
     Then the exported file should be successfully generated
-    And the Excel file should contain all revenue entries a
+    And the Excel file should contain all revenue entries
