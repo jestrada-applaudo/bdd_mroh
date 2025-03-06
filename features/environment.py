@@ -27,6 +27,7 @@ def before_all(context):
     context.revision_id = None
     context.revenue_ids = []
     context.reference_entities = {}
+    context.rate_ids = []  # Add this line to track rate IDs
     
     # Set up logging
     logging.basicConfig(
@@ -70,6 +71,20 @@ def after_all(context):
                 context.logger.error(f"Failed to clean up revenues: {response.text}")
         except Exception as e:
             context.logger.error(f"Error cleaning up revenues: {str(e)}")
+    
+    # Clean up created rates
+    if hasattr(context, 'rate_ids') and context.rate_ids:
+        url = f"{context.base_url}/revisions/revenue_options/parameters/rates/delete"
+        data = {"rateIds": context.rate_ids}
+        try:
+            response = requests.put(url, headers=context.headers, json=data)
+            if response.status_code == 200:
+                result = response.json()
+                context.logger.info(f"Cleaned up {len(result.get('deletedRates', []))} rate entries")
+            else:
+                context.logger.error(f"Failed to clean up rates: {response.text}")
+        except Exception as e:
+            context.logger.error(f"Error cleaning up rates: {str(e)}")
     
     context.logger.info("Test run completed")
 
