@@ -127,11 +127,11 @@ def step_impl(context):
         # Verify values if needed
         if row['Value']:
             value = float(row['Value'])
-            assert abs(rubrics[rubric_key]["value"] - value) < 0.001, f"Expected value {value}, got {rubrics[rubric_key]['value']}"
+            assert abs(float(rubrics[rubric_key]["value"]) - value) < 0.001, f"Expected value {value}, got {rubrics[rubric_key]['value']}"
             
         if row['BillableLaborHours']:
             hours = float(row['BillableLaborHours'])
-            assert abs(rubrics[rubric_key]["billableLaborHours"] - hours) < 0.001, f"Expected hours {hours}, got {rubrics[rubric_key]['billableLaborHours']}"
+            assert abs(float(rubrics[rubric_key]["billableLaborHours"]) - hours) < 0.001, f"Expected hours {hours}, got {rubrics[rubric_key]['billableLaborHours']}"
             
     context.logger.info("Verified all rubrics in response")
 
