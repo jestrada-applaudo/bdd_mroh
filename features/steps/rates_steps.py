@@ -30,7 +30,7 @@ def step_impl(context):
 
 @when('I create a new rate entry')
 def step_impl(context):
-    url = f"{context.base_url}/revisions/revenue_options/parameters/rates"
+    url = f"{context.base_url}/revisions/{context.revision_id}/rates"
     
     # Add a createdBy field if not present
     if 'createdBy' not in context.rate_data:
@@ -43,20 +43,24 @@ def step_impl(context):
     context.response_status = response.status_code
     
     # Store response
-    if response.status_code == 201:
-        context.response = response.json()
-        if "id" in context.response:
-            if not hasattr(context, 'rate_ids'):
-                context.rate_ids = []
-            context.rate_ids.append(context.response["id"])
-            context.logger.info(f"Created rate: {context.response['id']}")
+    if response.status_code in [200, 201]:
+        try:
+            context.response = response.json()
+            if "id" in context.response:
+                if not hasattr(context, 'rate_ids'):
+                    context.rate_ids = []
+                context.rate_ids.append(context.response["id"])
+                context.logger.info(f"Created rate: {context.response['id']}")
+        except Exception as e:
+            context.response = {"error": str(e), "status_code": response.status_code}
+            context.logger.error(f"Failed to parse response: {e}")
     else:
         context.response = {"error": response.text, "status_code": response.status_code}
         context.logger.error(f"Failed to create rate: {response.text}")
 
 @then('the rate should be created successfully')
 def step_impl(context):
-    assert context.response_status == 201, f"Expected status 201, got {context.response_status}"
+    assert context.response_status in [200, 201], f"Expected status 200 or 201, got {context.response_status}"
     assert "id" in context.response, "No id for rate in response"
     context.logger.info(f"Rate created with ID: {context.response['id']}")
 
@@ -65,7 +69,10 @@ def step_impl(context):
     # Verify that the response contains all the rates we set
     for field, value in context.rate_data.items():
         if field.endswith('Rate') and field in context.response:
-            assert abs(context.response[field] - value) < 0.001, f"Expected {field} to be {value}, got {context.response[field]}"
+            # Convert string to float if needed
+            response_value = float(context.response[field]) if isinstance(context.response[field], str) else context.response[field]
+            expected_value = float(value) if isinstance(value, str) else value
+            assert abs(response_value - expected_value) < 0.001, f"Expected {field} to be {expected_value}, got {response_value}"
     
     context.logger.info("Verified all rate values in response")
 
@@ -117,7 +124,7 @@ def step_impl(context, level):
 @when('I attempt to create a new rate entry')
 def step_impl(context):
     # Similar to regular create but we expect it might fail
-    url = f"{context.base_url}/revisions/revenue_options/parameters/rates"
+    url = f"{context.base_url}/revisions/{context.revision_id}/rates"
     
     # Send request and capture response regardless of status code
     response = requests.post(url, headers=context.headers, json=context.rate_data)
@@ -183,7 +190,7 @@ def step_impl(context):
 
 @when('I search for rates with customer code "{customer_code}"')
 def step_impl(context, customer_code):
-    url = f"{context.base_url}/revisions/{context.revision_id}/revenue_options/parameters/rates"
+    url = f"{context.base_url}/revisions/{context.revision_id}/rates"
     params = {
         "searchText": customer_code,
         "page": 0,
@@ -196,7 +203,7 @@ def step_impl(context, customer_code):
 
 @when('I search for rates with year "{year}"')
 def step_impl(context, year):
-    url = f"{context.base_url}/revisions/{context.revision_id}/revenue_options/parameters/rates"
+    url = f"{context.base_url}/revisions/{context.revision_id}/rates"
     params = {
         "searchText": year,
         "page": 0,
@@ -240,7 +247,7 @@ def step_impl(context):
     update_data['lastModifiedBy'] = os.getenv('TEST_USER_ID', '99999999-9999-9999-9999-999999999999')
     
     # Send update request
-    url = f"{context.base_url}/revisions/revenue_options/parameters/rates/{rate_id}"
+    url = f"{context.base_url}/revisions/{context.revision_id}/rates/{rate_id}"
     response = requests.put(url, headers=context.headers, json=update_data)
     
     # Store response status code

@@ -45,7 +45,7 @@ def before_scenario(context, scenario):
     context.logger.info(f"Starting scenario: {scenario.name}")
     
     # Create a revision if needed and none exists
-    if 'revenue_test' in scenario.tags and not context.revision_id:
+    if ('revenue_test' in scenario.tags or 'rates_test' in scenario.tags) and not context.revision_id:
         create_test_revision(context, scenario.name)
     
     # Create reference entities if needed
@@ -73,8 +73,8 @@ def after_all(context):
             context.logger.error(f"Error cleaning up revenues: {str(e)}")
     
     # Clean up created rates
-    if hasattr(context, 'rate_ids') and context.rate_ids:
-        url = f"{context.base_url}/revisions/revenue_options/parameters/rates/delete"
+    if hasattr(context, 'rate_ids') and context.rate_ids and hasattr(context, 'revision_id') and context.revision_id:
+        url = f"{context.base_url}/revisions/{context.revision_id}/rates/delete"
         data = {"rateIds": context.rate_ids}
         try:
             response = requests.put(url, headers=context.headers, json=data)

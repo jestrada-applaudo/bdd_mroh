@@ -3,28 +3,6 @@ from behave import given, when, then
 import requests, json, uuid
 from datetime import datetime, timedelta
 
-@given('the following reference entities exist')
-def step_impl(context):
-    # Store the entities for use in tests
-    context.reference_entities = {}
-    for row in context.table:
-        entity_type = row['Entity']
-        entity_id = row['ID']
-        
-        # Verify entity exists in database
-        url = f"{context.base_url}/parameters/{entity_type.lower()}s/{entity_id}"
-        response = requests.get(url, headers=context.headers)
-        
-        if response.status_code != 200:
-            context.logger.warning(f"{entity_type} with ID {entity_id} not found. Tests may fail.")
-        
-        context.reference_entities[entity_type] = {
-            'id': entity_id,
-            'name': row['Name/Code']
-        }
-    
-    context.logger.info(f"Using reference entities: {context.reference_entities}")
-
 @given('I have labor revenue data with the following details')
 def step_impl(context):
     # Create data from table

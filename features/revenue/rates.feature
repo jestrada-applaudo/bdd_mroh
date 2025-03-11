@@ -10,7 +10,7 @@ Feature: Rates Management
     And the following reference entities exist:
       | Entity     | ID                                   | Name/Code     |
       | Customer   | 22222222-2222-2222-2222-222222222222 | TEST-CUSTOMER |
-      | FleetType  | 77777777-7777-7777-7777-777777777777 | TEST-FLEET    |
+      | FleetType  | FF010A6B-9188-4A5D-A1EC-D7EF253AD051 | TEST-FLEET    |
       | CheckType  | 44444444-4444-4444-4444-444444444444 | TEST-CHECK    |
 
   @rates_test @create @level1
@@ -34,7 +34,7 @@ Feature: Rates Management
       | level         | 2                                     |
       | year          | 2023                                  |
       | customerId    | 22222222-2222-2222-2222-222222222222 |
-      | fleetTypeId   | 77777777-7777-7777-7777-777777777777 |
+      | fleetTypeId   | FF010A6B-9188-4A5D-A1EC-D7EF253AD051 |
       | airframeRate  | 1200.50                              |
       | engineeringRate | 800.25                             |
       | comments      | Test Level 2 Rate                    |
@@ -117,4 +117,4 @@ Feature: Rates Management
     Given I have created multiple rate entries
     When I export rates to Excel format
     Then the exported file should be successfully generated
-    And the Excel file should contain all rate entries 
+    And the Excel file should contain all rate entries
