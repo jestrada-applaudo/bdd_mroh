@@ -92,17 +92,22 @@ def create_test_revision(context, scenario_name):
     url = f"{context.base_url}/revisions"
     now = datetime.now()
     
+    # Make the revision name more unique
+    uuid_part = str(uuid.uuid4())[:8]
+    # Remove any problematic characters from scenario name
+    safe_name = ''.join(c for c in scenario_name[:15] if c.isalnum() or c.isspace())
+    
     data = {
         "opCo": os.getenv('TEST_OPCO_ID', '3fa85f64-5717-4562-b3fc-2c963f66afa6'),
         "fromRevision": os.getenv('FROM_REVISION_ID', '3fa85f64-5717-4562-b3fc-2c963f66afa6'),
-        "revisionName": f"Test {scenario_name[:20]} {now.strftime('%Y%m%d%H%M%S')}",
+        "revisionName": f"Test_{safe_name}_{now.strftime('%Y%m%d%H%M%S')}_{uuid_part}",
         "revisionType": "TEST",
         "year": now.year,
         "week": int(now.strftime("%V")),
         "comment": "Automated test revision",
         "baseline": now.isoformat(),
         "closure": (now + timedelta(days=7)).isoformat(),
-        "isOfficial": True
+        "isOfficial": False  # Set to False to avoid conflicts
     }
     
     try:
@@ -111,7 +116,20 @@ def create_test_revision(context, scenario_name):
             result = response.json()
             context.revision_id = result.get("revisionId")
             context.logger.info(f"Created test revision: {context.revision_id}")
+            assert context.revision_id, "Test revision not created"
         else:
             context.logger.error(f"Failed to create revision: Status {response.status_code}, Response: {response.text}")
+            # Try one more time with a completely random name
+            data["revisionName"] = f"Test_BDD_{now.strftime('%Y%m%d%H%M%S')}_{uuid.uuid4()}"
+            response = requests.post(url, headers=context.headers, json=data)
+            if response.status_code == 200:
+                result = response.json()
+                context.revision_id = result.get("revisionId")
+                context.logger.info(f"Created test revision (retry): {context.revision_id}")
+                assert context.revision_id, "Test revision not created on retry"
+            else:
+                context.logger.error(f"Failed to create revision on retry: Status {response.status_code}, Response: {response.text}")
+                assert False, "Test revision not created"
     except Exception as e:
         context.logger.error(f"Exception creating revision: {str(e)}")
+        assert False, f"Test revision creation failed: {str(e)}"

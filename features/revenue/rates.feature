@@ -71,6 +71,40 @@ Feature: Rates Management
     Then the operation should fail with a validation error
     And the error message should mention "required field"
 
+  @rates_test @replace @negative
+  Scenario: Create rate with duplicate data and replace flag set to false
+    Given I have created a Level 1 rate for year 2023
+    When I create a duplicate rate with replace flag set to false
+    Then the operation should fail with a validation error
+    And the error message should mention "duplicate"
+
+  @rates_test @replace
+  Scenario: Create rate with duplicate data and replace flag set to true
+    Given I have created a Level 1 rate for year 2023 with initial values:
+      | Field         | Value                                 |
+      | airframeRate  | 1000.50                              |
+      | backshopRate  | 500.75                               |
+      | comments      | Initial Rate                         |
+    When I create a duplicate rate with replace flag set to true and updated values:
+      | Field         | Value                                 |
+      | airframeRate  | 2000.75                              |
+      | backshopRate  | 1500.25                              |
+      | comments      | Updated Rate via Replace             |
+    Then the rate should be updated successfully
+    And the response should contain the updated values
+
+  @rates_test @replace_update
+  Scenario: Update existing rate fields directly
+    Given I have created a Level 1 rate for year 2023
+    When I update the existing rate with new values:
+      | Field         | Value                               |
+      | airframeRate  | 3000.00                            |
+      | backshopRate  | 2000.00                            |
+      | comments      | Updated via direct field update     |
+    Then the rate should be updated successfully
+    And the rate should maintain its original ID
+    And the response should contain the updated values
+
   @rates_test @search
   Scenario: Search for rates by customer
     Given I have created a Level 1 rate with customer code "TEST-CUSTOMER"
