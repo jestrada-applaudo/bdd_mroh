@@ -107,6 +107,18 @@ Feature: Rates Management
 
   @rates_test @search
   Scenario: Search for rates by customer
+    Given the API is accessible
+    And I am authenticated with valid credentials
+    And a test revision exists
+    And the following reference entities exist
+      | Entity    | ID                                   | Name/Code     |
+      | Customer  | 22222222-2222-2222-2222-222222222222 | TEST-CUSTOMER |
+      | FleetType | FF010A6B-9188-4A5D-A1EC-D7EF253AD051 | TEST-FLEET    |
+    And the following reference entities exist
+      | Entity    | ID                                   | Name/Code     |
+      | Customer  | 22222222-2222-2222-2222-222222222222 | TEST-CUSTOMER |
+      | FleetType | FF010A6B-9188-4A5D-A1EC-D7EF253AD051 | TEST-FLEET    |
+      | CheckType | 44444444-4444-4444-4444-444444444444 | TEST-CHECK    |
     Given I have created a Level 1 rate with customer code "TEST-CUSTOMER"
     When I search for rates with customer code "TEST-CUSTOMER"
     Then the search results should contain exactly 1 entry
@@ -114,9 +126,102 @@ Feature: Rates Management
 
   @rates_test @search
   Scenario: Search for rates by year
+    Given the API is accessible
+    And I am authenticated with valid credentials
+    And a test revision exists
+    And the following reference entities exist
+      | Entity    | ID                                   | Name/Code     |
+      | Customer  | 22222222-2222-2222-2222-222222222222 | TEST-CUSTOMER |
+      | FleetType | FF010A6B-9188-4A5D-A1EC-D7EF253AD051 | TEST-FLEET    |
+    And the following reference entities exist
+      | Entity    | ID                                   | Name/Code     |
+      | Customer  | 22222222-2222-2222-2222-222222222222 | TEST-CUSTOMER |
+      | FleetType | FF010A6B-9188-4A5D-A1EC-D7EF253AD051 | TEST-FLEET    |
+      | CheckType | 44444444-4444-4444-4444-444444444444 | TEST-CHECK    |
     Given I have created multiple rate entries for different years
     When I search for rates with year "2023"
     Then the search results should contain all entries for year 2023
+
+  @rates_test @search
+  Scenario: Search for rates by level
+    Given the API is accessible
+    And I am authenticated with valid credentials
+    And a test revision exists
+    And the following reference entities exist
+      | Entity    | ID                                   | Name/Code     |
+      | Customer  | 22222222-2222-2222-2222-222222222222 | TEST-CUSTOMER |
+      | FleetType | FF010A6B-9188-4A5D-A1EC-D7EF253AD051 | TEST-FLEET    |
+      | CheckType | 44444444-4444-4444-4444-444444444444 | TEST-CHECK    |
+    Given I have created the following rates
+      | Level | Year | Customer      |
+      | 1     | 2023 | TEST-CUSTOMER |
+      | 2     | 2023 | TEST-CUSTOMER |
+      | 3     | 2023 | TEST-CUSTOMER |
+    When I search for rates with level "2"
+    Then the search results should contain rates with level 2
+    
+  @rates_test @search
+  Scenario: Search for rates by fleet type
+    Given the API is accessible
+    And I am authenticated with valid credentials
+    And a test revision exists
+    And the following reference entities exist
+      | Entity    | ID                                   | Name/Code     |
+      | Customer  | 22222222-2222-2222-2222-222222222222 | TEST-CUSTOMER |
+      | FleetType | FF010A6B-9188-4A5D-A1EC-D7EF253AD051 | TEST-FLEET    |
+      | CheckType | 44444444-4444-4444-4444-444444444444 | TEST-CHECK    |
+    Given I have created a Level 2 Rate with Fleet Type
+    When I search for rates with fleet type "TEST-FLEET"
+    Then the search results should contain rates with fleet type "TEST-FLEET"
+    
+  @rates_test @search
+  Scenario: Search for rates by check type
+    Given the API is accessible
+    And I am authenticated with valid credentials
+    And a test revision exists
+    And the following reference entities exist
+      | Entity    | ID                                   | Name/Code     |
+      | Customer  | 22222222-2222-2222-2222-222222222222 | TEST-CUSTOMER |
+      | FleetType | FF010A6B-9188-4A5D-A1EC-D7EF253AD051 | TEST-FLEET    |
+      | CheckType | 44444444-4444-4444-4444-444444444444 | TEST-CHECK    |
+    Given I have created a Level 3 Rate with Check Type
+    When I search for rates with check type "TEST-CHECK"
+    Then the search results should contain rates with check type "TEST-CHECK"
+    
+  @rates_test @search
+  Scenario: Search for rates with multiple criteria
+    Given the API is accessible
+    And I am authenticated with valid credentials
+    And a test revision exists
+    And the following reference entities exist
+      | Entity    | ID                                   | Name/Code     |
+      | Customer  | 22222222-2222-2222-2222-222222222222 | TEST-CUSTOMER |
+      | FleetType | FF010A6B-9188-4A5D-A1EC-D7EF253AD051 | TEST-FLEET    |
+      | CheckType | 44444444-4444-4444-4444-444444444444 | TEST-CHECK    |
+    Given I have created the following rates
+      | Level | Year | Customer      |
+      | 1     | 2023 | TEST-CUSTOMER |
+      | 2     | 2024 | TEST-CUSTOMER |
+      | 3     | 2025 | TEST-CUSTOMER |
+    When I search for rates with criteria
+      | Field    | Value         |
+      | year     | 2023          |
+      | level    | 1             |
+      | customer | TEST-CUSTOMER |
+    Then the search results should match all criteria
+    
+  @rates_test @search @negative
+  Scenario: Search with no matching results
+    Given the API is accessible
+    And I am authenticated with valid credentials
+    And a test revision exists
+    And the following reference entities exist
+      | Entity    | ID                                   | Name/Code     |
+      | Customer  | 22222222-2222-2222-2222-222222222222 | TEST-CUSTOMER |
+      | FleetType | FF010A6B-9188-4A5D-A1EC-D7EF253AD051 | TEST-FLEET    |
+      | CheckType | 44444444-4444-4444-4444-444444444444 | TEST-CHECK    |
+    When I search for rates with text "NONEXISTENT-RATE-XYZ"
+    Then the search results should be empty
 
   @rates_test @edit
   Scenario: Edit an existing rate
