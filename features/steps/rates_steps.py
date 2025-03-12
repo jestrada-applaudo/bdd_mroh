@@ -857,4 +857,261 @@ def step_impl(context):
         Then the rate should be created successfully
     ''')
     
-    context.logger.info(f"Created Level 3 rate with Check Type") 
+    context.logger.info(f"Created Level 3 rate with Check Type")
+
+@when('I search for rates with sorting')
+def step_impl(context):
+    # Build sorting parameters from table
+    sort_field = None
+    sort_direction = None
+    
+    for row in context.table:
+        field = row['Field']
+        direction = row['Direction'].lower()
+        
+        # Store for the request
+        sort_field = field
+        sort_direction = direction
+    
+    url = f"{context.base_url}/revisions/{context.revision_id}/rates"
+    params = {
+        "page": 0,
+        "pageSize": 50,  # Use a larger page size to get all results
+        "sortBy": sort_field,
+        "sortDirection": sort_direction
+    }
+    
+    response = requests.get(url, headers=context.headers, params=params)
+    context.response = response.json() if response.status_code == 200 else {"error": response.text}
+    context.logger.info(f"Searched for rates with sorting: field={sort_field}, direction={sort_direction}")
+
+@then('the search results should be sorted by "{field}" in "{direction}" order')
+def step_impl(context, field, direction):
+    assert "items" in context.response, f"No content in response: {context.response}"
+    items = context.response["items"]
+    
+    # If we have only one or zero items, we can't verify sorting
+    if len(items) <= 1:
+        context.logger.info(f"Only {len(items)} items found, not enough to verify sorting")
+        return
+    
+    # Check if the items are sorted correctly
+    is_sorted = True
+    
+    # Convert direction to boolean for easier comparison
+    ascending = direction.lower() == "ascending"
+    
+    for i in range(len(items) - 1):
+        # Get the current and next items
+        current = items[i]
+        next_item = items[i + 1]
+        
+        # Extract the values to compare
+        try:
+            current_value = current[field]
+            next_value = next_item[field]
+            
+            # Handle nested fields if needed
+            if field not in current and "." in field:
+                parts = field.split(".")
+                current_value = current
+                next_value = next_item
+                for part in parts:
+                    if part in current_value:
+                        current_value = current_value[part]
+                    else:
+                        current_value = None
+                        break
+                    
+                    if part in next_value:
+                        next_value = next_value[part]
+                    else:
+                        next_value = None
+                        break
+            
+            # If either value is None, skip this comparison
+            if current_value is None or next_value is None:
+                continue
+                
+            # Convert to appropriate type for comparison
+            if isinstance(current_value, str) and isinstance(next_value, str):
+                current_value = current_value.lower()
+                next_value = next_value.lower()
+            
+            # Compare based on the sorting direction
+            if ascending:
+                if current_value > next_value:
+                    is_sorted = False
+                    context.logger.error(f"Items not sorted in ascending order: {current_value} > {next_value}")
+                    break
+            else:  # descending
+                if current_value < next_value:
+                    is_sorted = False
+                    context.logger.error(f"Items not sorted in descending order: {current_value} < {next_value}")
+                    break
+                    
+        except (KeyError, TypeError) as e:
+            context.logger.warning(f"Could not compare field '{field}' in items: {str(e)}")
+            # If we can't compare, skip this pair
+            continue
+    
+    assert is_sorted, f"Results are not sorted by {field} in {direction} order"
+    context.logger.info(f"Verified results are sorted by {field} in {direction} order")
+
+@given('I have created rates for multiple customers')
+def step_impl(context):
+    # Define customer IDs from the reference entities
+    customer_ids = []
+    customer_codes = []
+    
+    for entity, data in context.reference_entities.items():
+        if entity.startswith('Customer'):
+            customer_ids.append(data['id'])
+            customer_codes.append(data['name'] if 'name' in data else data['code'])
+    
+    # Create at least one rate for each customer
+    for i, customer_id in enumerate(customer_ids):
+        if customer_id:
+            # Create a Level 1 rate for this customer
+            rate_data = {
+                "level": 1,
+                "year": 2023,
+                "customerId": customer_id,
+                "airframeRate": 1000.0 + (i * 100),  # Different rate for each customer
+                "comments": f"Rate for {customer_codes[i] if i < len(customer_codes) else 'unknown customer'}"
+            }
+            
+            context.rate_data = rate_data
+            context.execute_steps('''
+                When I create a new rate entry
+            ''')
+            
+            # Check if creation was successful
+            if context.response_status == 201:
+                context.logger.info(f"Created rate for customer ID: {customer_id}")
+            else:
+                context.logger.warning(f"Failed to create rate for customer ID: {customer_id}")
+    
+    # Verify at least some rates were created
+    url = f"{context.base_url}/revisions/{context.revision_id}/rates"
+    response = requests.get(url, headers=context.headers)
+    
+    if response.status_code == 200:
+        result = response.json()
+        items = result.get("items", [])
+        
+        # Log the number of rates found
+        context.logger.info(f"Found {len(items)} rates for sorting test")
+        
+        if len(items) < 2:
+            context.logger.warning("Less than 2 rates found, sorting test may not be effective")
+    else:
+        context.logger.error(f"Failed to retrieve rates: {response.text}")
+
+@given('I have created rates for multiple fleet types')
+def step_impl(context):
+    # Define fleet type IDs from the reference entities
+    fleet_type_ids = []
+    fleet_type_names = []
+    
+    for entity, data in context.reference_entities.items():
+        if entity.startswith('FleetType'):
+            fleet_type_ids.append(data['id'])
+            fleet_type_names.append(data['name'] if 'name' in data else data['code'])
+    
+    # Get a customer ID (use the first one)
+    customer_id = context.reference_entities['Customer']['id']
+    
+    # Create a Level 2 rate for each fleet type
+    for i, fleet_type_id in enumerate(fleet_type_ids):
+        if fleet_type_id:
+            # Create a Level 2 rate for this fleet type
+            rate_data = {
+                "level": 2,
+                "year": 2023,
+                "customerId": customer_id,
+                "fleetTypeId": fleet_type_id,
+                "airframeRate": 1000.0 + (i * 100),  # Different rate for each fleet type
+                "comments": f"Rate for {fleet_type_names[i] if i < len(fleet_type_names) else 'unknown fleet type'}"
+            }
+            
+            context.rate_data = rate_data
+            context.execute_steps('''
+                When I create a new rate entry
+            ''')
+            
+            # Check if creation was successful
+            if context.response_status == 201:
+                context.logger.info(f"Created rate for fleet type ID: {fleet_type_id}")
+            else:
+                context.logger.warning(f"Failed to create rate for fleet type ID: {fleet_type_id}")
+    
+    # Verify at least some rates were created
+    url = f"{context.base_url}/revisions/{context.revision_id}/rates"
+    response = requests.get(url, headers=context.headers)
+    
+    if response.status_code == 200:
+        result = response.json()
+        items = result.get("items", [])
+        
+        # Log the number of rates found
+        context.logger.info(f"Found {len(items)} rates for sorting test")
+        
+        if len(items) < 2:
+            context.logger.warning("Less than 2 rates found, sorting test may not be effective")
+    else:
+        context.logger.error(f"Failed to retrieve rates: {response.text}")
+
+@given('I have created rates for multiple check types')
+def step_impl(context):
+    # Define check type IDs from the reference entities
+    check_type_ids = []
+    check_type_names = []
+    
+    for entity, data in context.reference_entities.items():
+        if entity.startswith('CheckType'):
+            check_type_ids.append(data['id'])
+            check_type_names.append(data['name'] if 'name' in data else data['code'])
+    
+    # Get a customer ID (use the first one)
+    customer_id = context.reference_entities['Customer']['id']
+    
+    # Create a Level 3 rate for each check type
+    for i, check_type_id in enumerate(check_type_ids):
+        if check_type_id:
+            # Create a Level 3 rate for this check type
+            rate_data = {
+                "level": 3,
+                "year": 2023,
+                "customerId": customer_id,
+                "checkTypeId": check_type_id,
+                "ndtRate": 1000.0 + (i * 100),  # Different rate for each check type
+                "comments": f"Rate for {check_type_names[i] if i < len(check_type_names) else 'unknown check type'}"
+            }
+            
+            context.rate_data = rate_data
+            context.execute_steps('''
+                When I create a new rate entry
+            ''')
+            
+            # Check if creation was successful
+            if context.response_status == 201:
+                context.logger.info(f"Created rate for check type ID: {check_type_id}")
+            else:
+                context.logger.warning(f"Failed to create rate for check type ID: {check_type_id}")
+    
+    # Verify at least some rates were created
+    url = f"{context.base_url}/revisions/{context.revision_id}/rates"
+    response = requests.get(url, headers=context.headers)
+    
+    if response.status_code == 200:
+        result = response.json()
+        items = result.get("items", [])
+        
+        # Log the number of rates found
+        context.logger.info(f"Found {len(items)} rates for sorting test")
+        
+        if len(items) < 2:
+            context.logger.warning("Less than 2 rates found, sorting test may not be effective")
+    else:
+        context.logger.error(f"Failed to retrieve rates: {response.text}") 

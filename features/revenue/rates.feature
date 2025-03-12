@@ -223,6 +223,194 @@ Feature: Rates Management
     When I search for rates with text "NONEXISTENT-RATE-XYZ"
     Then the search results should be empty
 
+  @rates_test @sort
+  Scenario: Sort rates by level in ascending order
+    Given the API is accessible
+    And I am authenticated with valid credentials
+    And a test revision exists
+    And the following reference entities exist
+      | Entity    | ID                                   | Name/Code     |
+      | Customer  | 22222222-2222-2222-2222-222222222222 | TEST-CUSTOMER |
+      | FleetType | FF010A6B-9188-4A5D-A1EC-D7EF253AD051 | TEST-FLEET    |
+      | CheckType | 44444444-4444-4444-4444-444444444444 | TEST-CHECK    |
+    Given I have created the following rates
+      | Level | Year | Customer      |
+      | 3     | 2023 | TEST-CUSTOMER |
+      | 1     | 2023 | TEST-CUSTOMER |
+      | 2     | 2023 | TEST-CUSTOMER |
+    When I search for rates with sorting
+      | Field | Direction |
+      | level | asc       |
+    Then the search results should be sorted by "level" in "ascending" order
+
+  @rates_test @sort
+  Scenario: Sort rates by level in descending order
+    Given the API is accessible
+    And I am authenticated with valid credentials
+    And a test revision exists
+    And the following reference entities exist
+      | Entity    | ID                                   | Name/Code     |
+      | Customer  | 22222222-2222-2222-2222-222222222222 | TEST-CUSTOMER |
+      | FleetType | FF010A6B-9188-4A5D-A1EC-D7EF253AD051 | TEST-FLEET    |
+      | CheckType | 44444444-4444-4444-4444-444444444444 | TEST-CHECK    |
+    Given I have created the following rates
+      | Level | Year | Customer      |
+      | 1     | 2023 | TEST-CUSTOMER |
+      | 2     | 2023 | TEST-CUSTOMER |
+      | 3     | 2023 | TEST-CUSTOMER |
+    When I search for rates with sorting
+      | Field | Direction |
+      | level | desc      |
+    Then the search results should be sorted by "level" in "descending" order
+
+  @rates_test @sort
+  Scenario: Sort rates by year in ascending order
+    Given the API is accessible
+    And I am authenticated with valid credentials
+    And a test revision exists
+    And the following reference entities exist
+      | Entity    | ID                                   | Name/Code     |
+      | Customer  | 22222222-2222-2222-2222-222222222222 | TEST-CUSTOMER |
+      | FleetType | FF010A6B-9188-4A5D-A1EC-D7EF253AD051 | TEST-FLEET    |
+      | CheckType | 44444444-4444-4444-4444-444444444444 | TEST-CHECK    |
+    Given I have created the following rates
+      | Level | Year | Customer      |
+      | 1     | 2024 | TEST-CUSTOMER |
+      | 1     | 2022 | TEST-CUSTOMER |
+      | 1     | 2023 | TEST-CUSTOMER |
+    When I search for rates with sorting
+      | Field | Direction |
+      | year  | asc       |
+    Then the search results should be sorted by "year" in "ascending" order
+
+  @rates_test @sort
+  Scenario: Sort rates by year in descending order
+    Given the API is accessible
+    And I am authenticated with valid credentials
+    And a test revision exists
+    And the following reference entities exist
+      | Entity    | ID                                   | Name/Code     |
+      | Customer  | 22222222-2222-2222-2222-222222222222 | TEST-CUSTOMER |
+      | FleetType | FF010A6B-9188-4A5D-A1EC-D7EF253AD051 | TEST-FLEET    |
+      | CheckType | 44444444-4444-4444-4444-444444444444 | TEST-CHECK    |
+    Given I have created the following rates
+      | Level | Year | Customer      |
+      | 1     | 2022 | TEST-CUSTOMER |
+      | 1     | 2023 | TEST-CUSTOMER |
+      | 1     | 2024 | TEST-CUSTOMER |
+    When I search for rates with sorting
+      | Field | Direction |
+      | year  | desc      |
+    Then the search results should be sorted by "year" in "descending" order
+
+  @rates_test @sort
+  Scenario: Sort rates by customer code in ascending order
+    Given the API is accessible
+    And I am authenticated with valid credentials
+    And a test revision exists
+    And the following reference entities exist
+      | Entity    | ID                                   | Name/Code     |
+      | Customer  | 22222222-2222-2222-2222-222222222222 | TEST-CUSTOMER |
+      | Customer2 | 33333333-3333-3333-3333-333333333333 | ACME-CUSTOMER |
+      | Customer3 | 44444444-4444-4444-4444-444444444444 | ZYXW-CUSTOMER |
+      | FleetType | FF010A6B-9188-4A5D-A1EC-D7EF253AD051 | TEST-FLEET    |
+      | CheckType | 44444444-4444-4444-4444-444444444444 | TEST-CHECK    |
+    Given I have created rates for multiple customers
+    When I search for rates with sorting
+      | Field        | Direction |
+      | customerCode | asc       |
+    Then the search results should be sorted by "customerCode" in "ascending" order
+
+  @rates_test @sort
+  Scenario: Sort rates by customer code in descending order
+    Given the API is accessible
+    And I am authenticated with valid credentials
+    And a test revision exists
+    And the following reference entities exist
+      | Entity    | ID                                   | Name/Code     |
+      | Customer  | 22222222-2222-2222-2222-222222222222 | TEST-CUSTOMER |
+      | Customer2 | 33333333-3333-3333-3333-333333333333 | ACME-CUSTOMER |
+      | Customer3 | 44444444-4444-4444-4444-444444444444 | ZYXW-CUSTOMER |
+      | FleetType | FF010A6B-9188-4A5D-A1EC-D7EF253AD051 | TEST-FLEET    |
+      | CheckType | 44444444-4444-4444-4444-444444444444 | TEST-CHECK    |
+    Given I have created rates for multiple customers
+    When I search for rates with sorting
+      | Field        | Direction |
+      | customerCode | desc      |
+    Then the search results should be sorted by "customerCode" in "descending" order
+
+  @rates_test @sort
+  Scenario: Sort rates by fleet type in ascending order
+    Given the API is accessible
+    And I am authenticated with valid credentials
+    And a test revision exists
+    And the following reference entities exist
+      | Entity     | ID                                   | Name/Code     |
+      | Customer   | 22222222-2222-2222-2222-222222222222 | TEST-CUSTOMER |
+      | FleetType  | FF010A6B-9188-4A5D-A1EC-D7EF253AD051 | TEST-FLEET    |
+      | FleetType2 | BBBBBBBB-9188-4A5D-A1EC-D7EF253AD051 | ALPHA-FLEET   |
+      | FleetType3 | CCCCCCCC-9188-4A5D-A1EC-D7EF253AD051 | ZETA-FLEET    |
+      | CheckType  | 44444444-4444-4444-4444-444444444444 | TEST-CHECK    |
+    Given I have created rates for multiple fleet types
+    When I search for rates with sorting
+      | Field         | Direction |
+      | fleetTypeName | asc       |
+    Then the search results should be sorted by "fleetTypeName" in "ascending" order
+
+  @rates_test @sort
+  Scenario: Sort rates by fleet type in descending order
+    Given the API is accessible
+    And I am authenticated with valid credentials
+    And a test revision exists
+    And the following reference entities exist
+      | Entity     | ID                                   | Name/Code     |
+      | Customer   | 22222222-2222-2222-2222-222222222222 | TEST-CUSTOMER |
+      | FleetType  | FF010A6B-9188-4A5D-A1EC-D7EF253AD051 | TEST-FLEET    |
+      | FleetType2 | BBBBBBBB-9188-4A5D-A1EC-D7EF253AD051 | ALPHA-FLEET   |
+      | FleetType3 | CCCCCCCC-9188-4A5D-A1EC-D7EF253AD051 | ZETA-FLEET    |
+      | CheckType  | 44444444-4444-4444-4444-444444444444 | TEST-CHECK    |
+    Given I have created rates for multiple fleet types
+    When I search for rates with sorting
+      | Field         | Direction |
+      | fleetTypeName | desc      |
+    Then the search results should be sorted by "fleetTypeName" in "descending" order
+
+  @rates_test @sort
+  Scenario: Sort rates by check type in ascending order
+    Given the API is accessible
+    And I am authenticated with valid credentials
+    And a test revision exists
+    And the following reference entities exist
+      | Entity    | ID                                   | Name/Code     |
+      | Customer  | 22222222-2222-2222-2222-222222222222 | TEST-CUSTOMER |
+      | FleetType | FF010A6B-9188-4A5D-A1EC-D7EF253AD051 | TEST-FLEET    |
+      | CheckType | 44444444-4444-4444-4444-444444444444 | TEST-CHECK    |
+      | CheckType2| 55555555-5555-5555-5555-555555555555 | ALPHA-CHECK   |
+      | CheckType3| 66666666-6666-6666-6666-666666666666 | ZETA-CHECK    |
+    Given I have created rates for multiple check types
+    When I search for rates with sorting
+      | Field         | Direction |
+      | checkTypeName | asc       |
+    Then the search results should be sorted by "checkTypeName" in "ascending" order
+
+  @rates_test @sort
+  Scenario: Sort rates by check type in descending order
+    Given the API is accessible
+    And I am authenticated with valid credentials
+    And a test revision exists
+    And the following reference entities exist
+      | Entity    | ID                                   | Name/Code     |
+      | Customer  | 22222222-2222-2222-2222-222222222222 | TEST-CUSTOMER |
+      | FleetType | FF010A6B-9188-4A5D-A1EC-D7EF253AD051 | TEST-FLEET    |
+      | CheckType | 44444444-4444-4444-4444-444444444444 | TEST-CHECK    |
+      | CheckType2| 55555555-5555-5555-5555-555555555555 | ALPHA-CHECK   |
+      | CheckType3| 66666666-6666-6666-6666-666666666666 | ZETA-CHECK    |
+    Given I have created rates for multiple check types
+    When I search for rates with sorting
+      | Field         | Direction |
+      | checkTypeName | desc      |
+    Then the search results should be sorted by "checkTypeName" in "descending" order
+
   @rates_test @edit
   Scenario: Edit an existing rate
     Given I have created a Level 1 rate for year 2023
