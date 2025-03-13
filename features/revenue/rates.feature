@@ -71,6 +71,45 @@ Feature: Rates Management
     Then the operation should fail with a validation error
     And the error message should mention "required field"
 
+  @rates_test @validation
+  Scenario: Validate rate creation with maximum allowed digits
+    Given I have rate data with the following details:
+      | Field         | Value                                 |
+      | level         | 1                                     |
+      | year          | 2023                                  |
+      | customerId    | 22222222-2222-2222-2222-222222222222 |
+      | airframeRate  | 123456789012345678.123456            |
+      | comments      | Rate with max allowed digits          |
+    When I create a new rate entry
+    Then the rate should be created successfully
+    And the response should contain the correct rate values
+
+  @rates_test @validation @negative
+  Scenario: Validate rate creation with exceeding maximum allowed digits
+    Given I have rate data with the following details:
+      | Field         | Value                                 |
+      | level         | 1                                     |
+      | year          | 2023                                  |
+      | customerId    | 22222222-2222-2222-2222-222222222222 |
+      | airframeRate  | 1234567890123456789.123456           |
+      | comments      | Rate exceeding max allowed digits     |
+    When I attempt to create a new rate entry
+    Then the operation should fail with a validation error
+    And the error message should mention "Airframe rate must have at most 18 digits and 6 decimal places"
+
+  @rates_test @validation @negative
+  Scenario: Validate rate creation with exceeding decimal precision
+    Given I have rate data with the following details:
+      | Field         | Value                                 |
+      | level         | 1                                     |
+      | year          | 2023                                  |
+      | customerId    | 22222222-2222-2222-2222-222222222222 |
+      | airframeRate  | 12345.1234567                        |
+      | comments      | Rate exceeding decimal precision      |
+    When I attempt to create a new rate entry
+    Then the operation should fail with a validation error
+    And the error message should mention "Airframe rate must have at most 18 digits and 6 decimal places"
+
   @rates_test @replace @negative
   Scenario: Create rate with duplicate data and replace flag set to false
     Given I have created a Level 1 rate for year 2023
