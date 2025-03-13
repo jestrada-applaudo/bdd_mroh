@@ -48,6 +48,60 @@ Feature: Labor Revenue Management
     Then the operation should fail with a validation error
     And the error message should mention "Date Out cannot be before Date In"
 
+  @revenue_test @labor @validation
+  Scenario: Validate labor revenue creation with maximum allowed digits
+    Given I have labor revenue data with the following details:
+      | Field                | Value                                 |
+      | type                 | LABOR                                |
+      | customerId           | 22222222-2222-2222-2222-222222222222 |
+      | aircraftId           | 33333333-3333-3333-3333-333333333333 |
+      | checkTypeId          | 44444444-4444-4444-4444-444444444444 |
+      | lineId               | 55555555-5555-5555-5555-555555555555 |
+      | isAssociatedToEvent  | false                                |
+      | registrationDate     | today                                |
+    And I have the following labor rubrics:
+      | Type            | Value                    | BillableLaborHours |
+      | AIRFRAME_LABOR  | 123456789012.123456     | 10.0               |
+    When I create a new labor revenue entry
+    Then the labor revenue should be created successfully
+    And the response should contain both rubrics
+
+  @revenue_test @labor @validation @negative
+  Scenario: Validate labor revenue creation with exceeding maximum integer digits
+    Given I have labor revenue data with the following details:
+      | Field                | Value                                 |
+      | type                 | LABOR                                |
+      | customerId           | 22222222-2222-2222-2222-222222222222 |
+      | aircraftId           | 33333333-3333-3333-3333-333333333333 |
+      | checkTypeId          | 44444444-4444-4444-4444-444444444444 |
+      | lineId               | 55555555-5555-5555-5555-555555555555 |
+      | isAssociatedToEvent  | false                                |
+      | registrationDate     | today                                |
+    And I have the following labor rubrics:
+      | Type            | Value                    | BillableLaborHours |
+      | AIRFRAME_LABOR  | 1234567890123.123456    | 10.0               |
+    When I attempt to create a labor revenue entry
+    Then the operation should fail with a validation error
+    And the error message should mention "exceeds maximum allowed digits"
+
+  @revenue_test @labor @validation
+  Scenario: Validate labor revenue creation with exceeding decimal precision
+    Given I have labor revenue data with the following details:
+      | Field                | Value                                 |
+      | type                 | LABOR                                |
+      | customerId           | 22222222-2222-2222-2222-222222222222 |
+      | aircraftId           | 33333333-3333-3333-3333-333333333333 |
+      | checkTypeId          | 44444444-4444-4444-4444-444444444444 |
+      | lineId               | 55555555-5555-5555-5555-555555555555 |
+      | isAssociatedToEvent  | false                                |
+      | registrationDate     | today                                |
+    And I have the following labor rubrics:
+      | Type            | Value                 | BillableLaborHours |
+      | AIRFRAME_LABOR  | 123456.1234567       | 10.0               |
+    When I create a new labor revenue entry
+    Then the labor revenue should be created successfully
+    And the response should contain both rubrics
+
   @revenue_test @labor @export
   Scenario: Export labor revenues to Excel
     Given I have created multiple labor revenue entries
