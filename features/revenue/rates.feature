@@ -78,7 +78,7 @@ Feature: Rates Management
       | level         | 1                                     |
       | year          | 2023                                  |
       | customerId    | 22222222-2222-2222-2222-222222222222 |
-      | airframeRate  | 123456789012345678.123456            |
+      | airframeRate  | 123456789012.123456            |
       | comments      | Rate with max allowed digits          |
     When I create a new rate entry
     Then the rate should be created successfully
@@ -91,11 +91,11 @@ Feature: Rates Management
       | level         | 1                                     |
       | year          | 2023                                  |
       | customerId    | 22222222-2222-2222-2222-222222222222 |
-      | airframeRate  | 1234567890123456789.123456           |
+      | airframeRate  | 1234567890123.123456           |
       | comments      | Rate exceeding max allowed digits     |
     When I attempt to create a new rate entry
     Then the operation should fail with a validation error
-    And the error message should mention "Airframe rate must have at most 18 digits and 6 decimal places"
+    And the error message should mention "Airframe rate must have at most 12 digits and 6 decimal places"
 
   @rates_test @validation @negative
   Scenario: Validate rate creation with exceeding decimal precision
@@ -108,7 +108,7 @@ Feature: Rates Management
       | comments      | Rate exceeding decimal precision      |
     When I attempt to create a new rate entry
     Then the operation should fail with a validation error
-    And the error message should mention "Airframe rate must have at most 18 digits and 6 decimal places"
+    And the error message should mention "Airframe rate must have at most 12 digits and 6 decimal places"
 
   @rates_test @replace @negative
   Scenario: Create rate with duplicate data and replace flag set to false
