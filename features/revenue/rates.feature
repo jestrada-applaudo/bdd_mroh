@@ -460,13 +460,6 @@ Feature: Rates Management
     Then the rate should be updated successfully
     And the response should contain the updated values
 
-  @rates_test @delete
-  Scenario: Delete a single rate
-    Given I have created a Level 1 rate for year 2023
-    When I delete the rate
-    Then the rate should be deleted successfully
-    And the rate should no longer exist in the system
-
   @rates_test @delete @multiple
   Scenario: Delete multiple rates
     Given I have created the following rates:

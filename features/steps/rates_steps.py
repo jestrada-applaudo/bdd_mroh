@@ -295,28 +295,41 @@ def step_impl(context):
     rate_id = context.response["id"]
     
     # Send delete request with correct URL format
-    url = f"{context.base_url}/revisions/{context.revision_id}/rates/{rate_id}/delete"
+    url = f"{context.base_url}/revisions/{context.revision_id}/rates/delete"
     
-    # No need for request body with rate IDs array
-    response = requests.put(url, headers=context.headers)
+    # Prepare payload with single rate ID in the rateIds array
+    payload = {
+        "rateIds": [rate_id]
+    }
+    
+    # Send request with payload
+    response = requests.put(url, headers=context.headers, json=payload)
     context.response_status = response.status_code
     
     if response.status_code == 200:
         context.response = response.json()
         context.logger.info(f"Deleted rate: {rate_id}")
     else:
+        context.response = {"error": response.text, "status_code": response.status_code}
         context.logger.error(f"Failed to delete rate: {response.text}")
 
 @then('the rate should be deleted successfully')
 def step_impl(context):
     assert context.response_status == 200, f"Expected status 200, got {context.response_status}"
+    
+    # Check that the rate was deleted
+    deleted_items = context.response.get("deletedItems", [])
+    assert len(deleted_items) == 1, f"Expected 1 deleted item, got {len(deleted_items)}"
+    
     context.logger.info("Rate deleted successfully")
 
 @then('the rate should no longer exist in the system')
 def step_impl(context):
     # Verify the rate doesn't exist by trying to retrieve it
-    rate_id = context.response.get("deletedRates", [""])[0]
-    if not rate_id:
+    deleted_items = context.response.get("deletedItems", [])
+    if deleted_items:
+        rate_id = deleted_items[0]["id"]
+    else:
         rate_id = context.rate_ids[-1]  # Fallback to last created rate
         
     url = f"{context.base_url}/revisions/{context.revision_id}/revenue_options/parameters/rates/{rate_id}"
@@ -342,44 +355,50 @@ def step_impl(context):
 
 @when('I delete multiple rates')
 def step_impl(context):
-    # Delete each rate individually
-    deleted_rates = []
-    failed_rates = []
+    # Delete rates using the new endpoint with a batch delete
+    url = f"{context.base_url}/revisions/{context.revision_id}/rates/delete"
     
-    for rate_id in context.created_rate_ids:
-        url = f"{context.base_url}/revisions/{context.revision_id}/rates/{rate_id}/delete"
-        
-        response = requests.put(url, headers=context.headers)
-        
-        if response.status_code == 200:
-            try:
-                result = response.json()
-                deleted_rates.append(rate_id)
-                context.logger.info(f"Deleted rate: {rate_id}")
-            except Exception as e:
-                failed_rates.append(rate_id)
-                context.logger.error(f"Error parsing response for rate {rate_id}: {str(e)}")
-        else:
-            failed_rates.append(rate_id)
-            context.logger.error(f"Failed to delete rate {rate_id}: {response.text}")
+    # Prepare payload with list of rate IDs to delete
+    payload = {
+        "rateIds": context.created_rate_ids
+    }
     
-    # Store results
-    context.response_status = 200 if not failed_rates else 400
-    context.response = {"deletedRates": deleted_rates}
+    # Send the request
+    response = requests.put(url, headers=context.headers, json=payload)
     
-    if deleted_rates:
-        context.logger.info(f"Deleted {len(deleted_rates)} rates successfully")
-    if failed_rates:
-        context.logger.error(f"Failed to delete {len(failed_rates)} rates")
+    # Process response
+    if response.status_code == 200:
+        try:
+            context.response = response.json()
+            deleted_count = len(context.response.get("deletedItems", []))
+            context.logger.info(f"Deleted {deleted_count} rates successfully")
+        except Exception as e:
+            context.response = {"error": str(e)}
+            context.logger.error(f"Error parsing response: {str(e)}")
+    else:
+        context.response = {"error": response.text, "status_code": response.status_code}
+        context.logger.error(f"Failed to delete rates: {response.text}")
+    
+    # Store status code
+    context.response_status = response.status_code
 
 @then('all selected rates should be deleted successfully')
 def step_impl(context):
     assert context.response_status == 200, f"Expected status 200, got {context.response_status}"
     
     # Check that all rates were deleted
-    deleted_rates = context.response.get("deletedRates", [])
-    assert len(deleted_rates) == len(context.created_rate_ids), f"Expected {len(context.created_rate_ids)} deleted, got {len(deleted_rates)}"
-    context.logger.info(f"All {len(deleted_rates)} rates were deleted successfully")
+    deleted_items = context.response.get("deletedItems", [])
+    total_rates = context.response.get("totalRates", 0)
+    
+    # Verify total count matches expected count
+    assert total_rates == len(context.created_rate_ids), f"Expected {len(context.created_rate_ids)} deleted, got {total_rates}"
+    
+    # Verify each rate was deleted
+    deleted_ids = [item["id"].lower() for item in deleted_items]
+    for rate_id in context.created_rate_ids:
+        assert rate_id.lower() in deleted_ids, f"Rate {rate_id} was not found in the deleted items"
+    
+    context.logger.info(f"Verified all {total_rates} rates were deleted successfully")
 
 @then('none of the deleted rates should exist in the system')
 def step_impl(context):
