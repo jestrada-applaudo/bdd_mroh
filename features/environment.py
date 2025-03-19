@@ -27,7 +27,8 @@ def before_all(context):
     context.revision_id = None
     context.revenue_ids = []
     context.reference_entities = {}
-    context.rate_ids = []  # Add this line to track rate IDs
+    context.rate_ids = []  # Track rate IDs
+    context.flag_ids = []  # Track flag IDs
     
     # Set up logging
     logging.basicConfig(
@@ -45,7 +46,7 @@ def before_scenario(context, scenario):
     context.logger.info(f"Starting scenario: {scenario.name}")
     
     # Create a revision if needed and none exists
-    if ('revenue_test' in scenario.tags or 'rates_test' in scenario.tags) and not context.revision_id:
+    if ('revenue_test' in scenario.tags or 'rates_test' in scenario.tags or 'flags_test' in scenario.tags) and not context.revision_id:
         create_test_revision(context, scenario.name)
     
     # Create reference entities if needed
@@ -80,11 +81,28 @@ def after_all(context):
             response = requests.put(url, headers=context.headers, json=data)
             if response.status_code == 200:
                 result = response.json()
-                context.logger.info(f"Cleaned up {len(result.get('deletedRates', []))} rate entries")
+                context.logger.info(f"Cleaned up {len(result.get('deletedItems', []))} rate entries")
             else:
                 context.logger.error(f"Failed to clean up rates: {response.text}")
         except Exception as e:
             context.logger.error(f"Error cleaning up rates: {str(e)}")
+    
+    # Clean up created flags
+    if hasattr(context, 'flag_ids') and context.flag_ids and hasattr(context, 'revision_id') and context.revision_id:
+        deleted_count = 0
+        for flag_id in context.flag_ids:
+            url = f"{context.base_url}/revisions/{context.revision_id}/flags"
+            payload = {"id": flag_id}
+            try:
+                response = requests.delete(url, headers=context.headers, json=payload)
+                if response.status_code == 200:
+                    deleted_count += 1
+                else:
+                    context.logger.error(f"Failed to clean up flag {flag_id}: {response.text}")
+            except Exception as e:
+                context.logger.error(f"Error cleaning up flag {flag_id}: {str(e)}")
+        
+        context.logger.info(f"Cleaned up {deleted_count} flag entries")
     
     context.logger.info("Test run completed")
 
