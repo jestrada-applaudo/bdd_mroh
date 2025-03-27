@@ -18,13 +18,18 @@ To run all tests:
 behave
 To run specific tests:
 behave features/revenue/labor_revenue.feature
+behave features/revenue/rates.feature
+behave features/rate_assignment.feature
 To run tests with specific tags:
 behave --tags=@revenue_test
+behave --tags=@rates_test
 ## Test Structure
 
 - `features/`: Contains all feature files
 - `features/steps/`: Contains step definitions
 - `features/revenue/`: Contains revenue-specific features
+- `features/revenue/rates.feature`: Contains general rate management tests
+- `features/rate_assignment.feature`: Contains rate assignment API tests
 
 
 # BDD Testing Framework Structure
@@ -32,8 +37,14 @@ behave --tags=@revenue_test
 ## Current Implementation (Phase 1)
 ```
 features/
-└── revenue_domain/             # Initial focus on Revenue domain
-    ├── labor/                  # Labor revenue tests
+├── rate_assignment.feature    # Rate assignment API tests (level-based prioritization)
+├── steps/                     # Step definitions
+│   ├── common_steps.py
+│   ├── revenue_labor_steps.py
+│   ├── rates_steps.py
+│   └── rate_assignment_steps.py
+└── revenue/                   # Revenue domain
+    ├── labor/                 # Labor revenue tests
     │   ├── create_labor.feature          # Create labor revenue entries
     │   ├── update_labor.feature          # Update existing labor entries
     │   ├── delete_labor.feature          # Delete labor entries
@@ -41,9 +52,7 @@ features/
     │   ├── get_all_labor.feature         # List all labor entries
     │   ├── generate_labor_csv.feature    # Export to CSV
     │   └── generate_labor_excel.feature  # Export to Excel
-    └── steps/                  # Step definitions
-        ├── common_steps.py
-        └── revenue_labor_steps.py
+    └── rates.feature          # Rate management (CRUD operations)
 ```
 
 ## Planned Phases
@@ -128,6 +137,13 @@ revision_domain/
 │   ├── delete_revision.feature
 │   ├── get_revision.feature
 │   └── get_all_revision.feature
+├── rates/                      # Rates functionality tests
+│   ├── create_rate.feature
+│   ├── update_rate.feature
+│   ├── delete_rate.feature
+│   ├── get_rate.feature
+│   ├── assign_rates.feature   # Rate assignment functionality
+│   └── get_rates.feature
 ├── heat_map/                   # Heat map functionality tests
 │   ├── generate_heatmap.feature
 │   └── get_heatmap.feature
@@ -162,6 +178,8 @@ support/
    - Basic Labor revenue functionality
    - Core test infrastructure
    - Essential step definitions
+   - Rate management (CRUD operations)
+   - Rate assignment functionality
 
 2. **Next Steps (Phase 2)**
    - Complete Labor revenue features
@@ -196,6 +214,18 @@ support/
 - Retrieval of labor revenue data
 - Deletion of labor revenue entries
 
+### Rate Management Tests
+- Creating/updating/deleting rate entries for different levels
+- Searching and filtering rates
+- Sorting and pagination of rate data
+- Validation of rate fields
+
+### Rate Assignment Tests
+- Assigning rates at Level 1 (Customer + Year)
+- Assigning rates at Level 2 (Customer + Year + Fleet Type)
+- Assigning rates at Level 3 (Customer + Year + Check Type)
+- Default values when no applicable rates are found
+
 ### Coming Soon
 - Material management
 - Engineering management
@@ -225,8 +255,37 @@ cp .env.example .env
 behave
 
 # Run specific revenue feature
-behave features/revenue_domain/labor/creation.feature
+behave features/revenue/labor/creation.feature
+
+# Run rate management tests
+behave features/revenue/rates.feature
+
+# Run rate assignment tests
+behave features/rate_assignment.feature
 
 # Run tests with specific tag
 behave --tags=@labor_revenue
+behave --tags=@rates_test
+```
+
+## Rate Assignment API
+
+The Rate Assignment API allows assigning rates based on three hierarchical levels:
+
+1. Level 1: Customer/Year/Opco (lowest priority)
+2. Level 2: Customer/Year/Fleet Type (medium priority)
+3. Level 3: Customer/Year/Check Type (highest priority)
+
+The API endpoint being tested is:
+```
+POST /revisions/{revisionId}/rates/assign
+```
+
+Example request:
+```json
+{
+  "year": 2023,
+  "customerId": "22222222-2222-2222-2222-222222222222",
+  "checkTypeId": "44444444-4444-4444-4444-444444444444"
+}
 ```
