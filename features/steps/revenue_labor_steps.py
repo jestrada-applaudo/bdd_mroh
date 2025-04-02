@@ -164,7 +164,7 @@ def step_impl(context, count):
     assert actual_count == count, f"Expected exactly {count} entries, got {actual_count}"
     context.logger.info(f"Found exactly {count} entries as expected")
 
-@then('the entry should have customer code "{customer_code}"')
+@then('the labor entry should have customer code "{customer_code}"')
 def step_impl(context, customer_code):
     assert "items" in context.response, "No content in response"
     assert len(context.response["items"]) > 0, "No entries in response"

@@ -38,7 +38,7 @@ Feature: Labor Revenue Management
     Given I have created a labor revenue with customer code "TEST-CUSTOMER"
     When I search for labor revenues with text "TEST-CUSTOMER"
     Then the search results should contain exactly 1 entry
-    And the entry should have customer code "TEST-CUSTOMER"
+    And the labor entry should have customer code "TEST-CUSTOMER"
 
   @revenue_test @labor @validation @negative
   Scenario: Validate event association dates

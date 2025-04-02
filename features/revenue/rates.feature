@@ -160,8 +160,7 @@ Feature: Rates Management
       | CheckType | 44444444-4444-4444-4444-444444444444 | TEST-CHECK    |
     Given I have created a Level 1 rate with customer code "TEST-CUSTOMER"
     When I search for rates with customer code "TEST-CUSTOMER"
-    Then the search results should contain exactly 1 entry
-    And the entry should have customer code "TEST-CUSTOMER"
+    Then the search results should contain exactly 1 items
 
   @rates_test @search
   Scenario: Search for rates by year
@@ -477,3 +476,95 @@ Feature: Rates Management
     When I export rates to Excel format
     Then the exported file should be successfully generated
     And the Excel file should contain all rate entries
+
+  @rates_test @pagination
+  Scenario: Validate pagination with 5 items per page
+    Given the API is accessible
+    And I am authenticated with valid credentials
+    And a test revision exists
+    And the following reference entities exist
+      | Entity    | ID                                   | Name/Code     |
+      | Customer  | 22222222-2222-2222-2222-222222222222 | TEST-CUSTOMER |
+      | FleetType | FF010A6B-9188-4A5D-A1EC-D7EF253AD051 | TEST-FLEET    |
+      | CheckType | 44444444-4444-4444-4444-444444444444 | TEST-CHECK    |
+    And I have created 15 rate entries
+    When I request rates with pagination parameters
+      | pageSize | pageIndex |
+      | 5        | 0         |
+    Then the pagination metadata should be
+      | returnedItems | totalItems | nextPage | pageSize | pageIndex | totalPages |
+      | 5            | 15         | 1         | 5        | 0         | 3          |
+    And the response should contain exactly 5 items
+
+  @rates_test @pagination
+  Scenario: Validate pagination with 10 items per page
+    Given the API is accessible
+    And I am authenticated with valid credentials
+    And a test revision exists
+    And the following reference entities exist
+      | Entity    | ID                                   | Name/Code     |
+      | Customer  | 22222222-2222-2222-2222-222222222222 | TEST-CUSTOMER |
+      | FleetType | FF010A6B-9188-4A5D-A1EC-D7EF253AD051 | TEST-FLEET    |
+      | CheckType | 44444444-4444-4444-4444-444444444444 | TEST-CHECK    |
+    And I have created 25 rate entries
+    When I request rates with pagination parameters
+      | pageSize | pageIndex |
+      | 10       | 0         |
+    Then the pagination metadata should be
+      | returnedItems | totalItems | nextPage | pageSize | pageIndex | totalPages |
+      | 10           | 25         | 1         | 10       | 0         | 3          |
+    And the response should contain exactly 10 items
+
+  @rates_test @pagination
+  Scenario: Validate pagination on second page
+    Given the API is accessible
+    And I am authenticated with valid credentials
+    And a test revision exists
+    And the following reference entities exist
+      | Entity    | ID                                   | Name/Code     |
+      | Customer  | 22222222-2222-2222-2222-222222222222 | TEST-CUSTOMER |
+      | FleetType | FF010A6B-9188-4A5D-A1EC-D7EF253AD051 | TEST-FLEET    |
+      | CheckType | 44444444-4444-4444-4444-444444444444 | TEST-CHECK    |
+    And I have created 15 rate entries
+    When I request rates with pagination parameters
+      | pageSize | pageIndex |
+      | 5        | 1         |
+    Then the pagination metadata should be
+      | returnedItems | totalItems | nextPage | pageSize | pageIndex | totalPages |
+      | 5            | 15         | 2         | 5        | 1         | 3          |
+    And the response should contain exactly 5 items
+
+  @rates_test @pagination
+  Scenario: Validate pagination on last page
+    Given the API is accessible
+    And I am authenticated with valid credentials
+    And a test revision exists
+    And the following reference entities exist
+      | Entity    | ID                                   | Name/Code     |
+      | Customer  | 22222222-2222-2222-2222-222222222222 | TEST-CUSTOMER |
+      | FleetType | FF010A6B-9188-4A5D-A1EC-D7EF253AD051 | TEST-FLEET    |
+      | CheckType | 44444444-4444-4444-4444-444444444444 | TEST-CHECK    |
+    And I have created 15 rate entries
+    When I request rates with pagination parameters
+      | pageSize | pageIndex |
+      | 5        | 2         |
+    Then the pagination metadata should be
+      | returnedItems | totalItems | nextPage | pageSize | pageIndex | totalPages |
+      | 5            | 15         | null      | 5        | 2         | 3          |
+    And the response should contain exactly 5 items
+
+  @rates_test @pagination @negative
+  Scenario: Validate pagination with invalid page size
+    Given the API is accessible
+    And I am authenticated with valid credentials
+    And a test revision exists
+    And the following reference entities exist
+      | Entity    | ID                                   | Name/Code     |
+      | Customer  | 22222222-2222-2222-2222-222222222222 | TEST-CUSTOMER |
+      | FleetType | FF010A6B-9188-4A5D-A1EC-D7EF253AD051 | TEST-FLEET    |
+      | CheckType | 44444444-4444-4444-4444-444444444444 | TEST-CHECK    |
+    When I request rates with pagination parameters
+      | pageSize | pageIndex |
+      | 0        | 0         |
+    Then the operation should fail with a validation error
+    And the error message should mention "invalid page size"

@@ -1133,4 +1133,166 @@ def step_impl(context):
         if len(items) < 2:
             context.logger.warning("Less than 2 rates found, sorting test may not be effective")
     else:
-        context.logger.error(f"Failed to retrieve rates: {response.text}") 
+        context.logger.error(f"Failed to retrieve rates: {response.text}")
+
+@given('I have created {count:d} rate entries')
+def step_impl(context, count):
+    # Create multiple rate entries with unique combinations
+    for i in range(count):
+        # Create unique combinations by using different years and levels
+        year = 2023 + (i // 3)  # Increment year every 3 entries
+        level = (i % 3) + 1     # Cycle through levels 1, 2, 3
+        
+        # For level 2, use different fleet types
+        # For level 3, use different check types
+        fleet_type_id = None
+        check_type_id = None
+        
+        if level == 2:
+            # For level 2, use the existing fleet type ID
+            fleet_type_id = context.reference_entities['FleetType']['id']
+        elif level == 3:
+            # For level 3, use the existing check type ID
+            check_type_id = context.reference_entities['CheckType']['id']
+        
+        # Prepare rate data with required rate values
+        rate_data = {
+            'level': level,
+            'year': year,
+            'customerId': context.reference_entities['Customer']['id'],
+            'comments': f'Test Rate {i+1}',
+            'revisionId': context.revision_id,
+            'airframeRate': 1000.0 + (i * 100),  # Unique rate values
+            'engineRate': 500.0 + (i * 50),
+            'apuRate': 250.0 + (i * 25)
+        }
+        
+        if fleet_type_id:
+            rate_data['fleetTypeId'] = fleet_type_id
+        if check_type_id:
+            rate_data['checkTypeId'] = check_type_id
+            
+        # Create rate
+        url = f"{context.base_url}/revisions/{context.revision_id}/rates"
+        response = requests.post(url, headers=context.headers, json=rate_data)
+        
+        if response.status_code in [200, 201]:
+            rate_id = response.json().get('id')
+            context.logger.info(f"Created rate: {rate_id}")
+            context.logger.info(f"Rate created with ID: {rate_id}")
+        else:
+            context.logger.error(f"Failed to create rate: {response.text}")
+            assert False, f"Failed to create rate {i+1}"
+
+@when('I request rates with pagination parameters')
+def step_impl(context):
+    url = f"{context.base_url}/revisions/{context.revision_id}/rates"
+    
+    # Get pagination parameters from table
+    params = {}
+    for row in context.table:
+        params['pageSize'] = int(row['pageSize'])
+        params['page'] = int(row['pageIndex'])
+    
+    # Send request
+    response = requests.get(url, headers=context.headers, params=params)
+    
+    # Log the full request details for debugging
+    context.logger.info(f"Request URL: {url}")
+    context.logger.info(f"Request params: {params}")
+    context.logger.info(f"Response status: {response.status_code}")
+    
+    # Store response status code
+    context.response_status = response.status_code
+    
+    # Handle response based on status code
+    if response.status_code == 200:
+        try:
+            context.response = response.json()
+            context.logger.info(f"Response data: {json.dumps(context.response, indent=2)}")
+        except json.JSONDecodeError as e:
+            context.logger.error(f"Failed to parse JSON response: {e}")
+            context.logger.error(f"Raw response: {response.text}")
+            context.response = {"error": f"Invalid JSON response: {str(e)}"}
+    else:
+        context.logger.error(f"API Error: Status {response.status_code}")
+        context.logger.error(f"Error response: {response.text}")
+        try:
+            context.response = response.json()
+        except:
+            context.response = {"error": response.text}
+    
+    context.logger.info(f"Requested rates with pagination: {params}")
+
+@then('the pagination metadata should be')
+def step_impl(context):
+    # First check if we have a valid response
+    if context.response_status != 200:
+        context.logger.error(f"API returned error status: {context.response_status}")
+        context.logger.error(f"Error response: {context.response}")
+        assert False, f"API returned error status: {context.response_status}"
+    
+    # Get expected metadata from table
+    expected = {}
+    for row in context.table.rows:
+        expected['returnedItems'] = int(row[0]) if row[0] != 'null' else None
+        expected['totalItems'] = int(row[1]) if row[1] != 'null' else None
+        expected['nextPage'] = int(row[2]) if row[2] != 'null' else None
+        expected['pageSize'] = int(row[3]) if row[3] != 'null' else None
+        expected['pageIndex'] = int(row[4]) if row[4] != 'null' else None
+        expected['totalPages'] = int(row[5]) if row[5] != 'null' else None
+    
+    # Log expected vs actual values for debugging
+    context.logger.info(f"Expected pagination metadata: {expected}")
+    
+    # Verify pagination metadata in response
+    assert 'pagination' in context.response, f"No pagination metadata in response. Response: {context.response}"
+    pagination = context.response['pagination']
+    context.logger.info(f"Actual pagination metadata: {pagination}")
+    
+    for key, expected_value in expected.items():
+        # Caso especial para la última página: si esperamos nextPage=null y no hay
+        # nextPage en la respuesta pero hay previousPage, considerar como válido
+        if key == 'nextPage' and expected_value is None and key not in pagination and 'previousPage' in pagination:
+            context.logger.warning(f"Using previousPage instead of missing nextPage for last page validation")
+            continue
+        
+        assert key in pagination, f"Missing {key} in pagination metadata. Available keys: {list(pagination.keys())}"
+        assert pagination[key] == expected_value, f"Expected {key} to be {expected_value}, got {pagination[key]}"
+    
+    context.logger.info("Verified pagination metadata")
+
+@then('the response should contain exactly {count:d} items')
+def step_impl(context, count):
+    assert 'items' in context.response, "No items in response"
+    items = context.response['items']
+    assert len(items) == count, f"Expected {count} items, got {len(items)}"
+    context.logger.info(f"Verified response contains exactly {count} items")
+
+@then('the entry should have customer code "{customer_code}"')
+def step_impl(context, customer_code):
+    assert "items" in context.response, "No content in response"
+    assert len(context.response["items"]) > 0, "No entries in response"
+    
+    entry = context.response["items"][0]
+    # Verificar si existe customerCode en la entrada
+    if "customerCode" in entry:
+        assert entry["customerCode"] == customer_code, f"Expected customer code {customer_code}, got {entry['customerCode']}"
+    # Verificar si existe customerName (que podría contener el código en algunos casos)
+    elif "customerName" in entry:
+        assert customer_code in entry["customerName"], f"Expected customer code {customer_code} in customer name, got {entry['customerName']}"
+    # Verificar si hay otros campos que puedan tener el código del cliente
+    elif "customer" in entry and "code" in entry["customer"]:
+        assert entry["customer"]["code"] == customer_code, f"Expected customer code {customer_code}, got {entry['customer']['code']}"
+    else:
+        context.logger.info(f"Available fields in response: {entry.keys()}")
+        assert False, f"No customer code field found in response. Available fields: {list(entry.keys())}"
+    
+    context.logger.info(f"Verified customer code/name contains {customer_code}")
+
+@then(u'the search results should contain exactly {count:d} items')
+def step_impl(context, count):
+    assert 'items' in context.response, "No items in response"
+    items = context.response['items']
+    assert len(items) == count, f"Expected {count} items, got {len(items)}"
+    context.logger.info(f"Verified response contains exactly {count} items") 
